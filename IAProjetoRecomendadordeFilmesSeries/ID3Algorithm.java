@@ -7,33 +7,6 @@ import java.lang.Math;
 import java.util.Comparator;
 
 /**
- * ============================================================================
- * PROJETO: CLASSIFICADOR DE APROVAÇÃO DE EMPRÉSTIMO PESSOAL
- * Algoritmo ID3 (Iterative Dichotomiser 3) para Árvore de Decisão
- * ============================================================================
- * 
- * OBJETIVO:
- * Construir uma árvore de decisão que classifica se um empréstimo deve ser
- * aprovado (Sim/Não) com base em 4 atributos de risco do solicitante.
- * 
- * ATRIBUTOS PREDITORES:
- * 1. Histórico: Ruim, Neutro, Bom
- * 2. Renda: Baixa, Média, Alta
- * 3. Emprego: Instável, Estável
- * 4. Garantia: Não, Sim
- * 
- * ATRIBUTO ALVO:
- * - Aprovar: Sim, Não
- * 
- * ALGORITMO ID3:
- * 1. Calcula a entropia do conjunto de dados
- * 2. Para cada atributo, calcula o ganho de informação
- * 3. Escolhe o atributo com maior ganho como raiz
- * 4. Divide os dados por esse atributo
- * 5. Aplica recursivamente para cada subconjunto
- * 
- * ============================================================================
- * 
  * @author Rogerio
  * @version 1.0
  */
