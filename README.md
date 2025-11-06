@@ -1,8 +1,9 @@
 # I.A.-With-Machine-Learning-in-Java
+# Programação Oracle - Java Inteligência artificial com Machine Learning
 
-#Projeto: Classificador de Aprovação de Empréstimo Pessoal
-#Dataset Utilizado (14 Instâncias)
-#O objetivo é classificar se o empréstimo deve ser Aprovado (Sim/Não) com base em quatro atributos de risco:
+# Projeto: Classificador de Aprovação de Empréstimo Pessoal
+# Dataset Utilizado (14 Instâncias)
+# O objetivo é classificar se o empréstimo deve ser Aprovado (Sim/Não) com base em quatro atributos de risco:
 
 <img width="366" height="772" alt="Captura de tela 2025-11-05 194922" src="https://github.com/user-attachments/assets/b6ccb9d0-9155-45e4-9871-abca8d4c0697" />
 
