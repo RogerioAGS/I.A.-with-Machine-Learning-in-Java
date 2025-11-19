@@ -2245,7 +2245,403 @@ public class ID3Algorithm {
     }
 }
 
+#Seção 3 - Projeto 5: Classificador de Tipo de Smartphone (Consumo)
+
+#O objetivo principal do projeto é construir um Classificador de Tipo de Smartphone usando o algoritmo de Árvore de Decisão ID3.
+
+A finalidade prática é prever a decisão binária de um consumidor (se ele deve "Trocar" ou "Não Trocar" de smartphone) com base em suas características (Sistema Operacional, Tela, Câmera e Preço).
+
+O objetivo acadêmico é demonstrar e implementar os conceitos fundamentais do aprendizado de máquina supervisionado, especificamente a construção de uma árvore de decisão baseada no critério de Ganho de Informação.
+
+#Objetivo de Cada Programa (Módulos)
+#O projeto foi dividido em cinco arquivos (programas/classes) seguindo o princípio da Modularidade, onde cada um tem uma responsabilidade clara no processo de construção do classificador.
+
+#1. DataPoint.java
+#Objetivo: Servir como a estrutura de dados fundamental (modelo).
+
+Função: Representar uma única instância (linha) do conjunto de dados, ou seja, um smartphone. Ele armazena as características (features: SO, Tela, Câmera, Preço) e o resultado conhecido (targetLabel: Trocar/Não Trocar).
+
+Papel no ID3: É o bloco de construção que o algoritmo usa para treinar e classificar.
+
+import java.util.List;
+
+/**
+ * Representa uma única instância de dados (um smartphone) no dataset.
+ * Contém a lista de features e o rótulo de destino (Trocar/Não Trocar).
+ */
+public class DataPoint {
+    // 0: SO, 1: Tela, 2: Câmera, 3: Preço [cite: 12]
+    public List<String> features; 
+    public String targetLabel;     // Rótulo de destino [cite: 14]
+
+    /**
+     * Construtor para inicializar o ponto de dados.
+     */
+    public DataPoint(List<String> features, String targetLabel) {
+        this.features = features;
+        this.targetLabel = targetLabel;
+    }
+
+    /** Retorna o valor da feature em um índice específico. [cite: 19] */
+    public String getFeature(int index) { 
+        return features.get(index); 
+    }
+    
+    /** Retorna o rótulo de destino. [cite: 20] */
+    public String getTargetLabel() { 
+        return targetLabel; 
+    }
+}
+
+#2. ID3Node.java
+#Objetivo: Definir a estrutura hierárquica da árvore.
+
+Função: Representar um nó na árvore de decisão. Um nó pode ser:
+
+Um Nó de Decisão (Nó Interno), que testa um atributo (ex: "SO") e tem ramificações (children).
+
+Um Nó Folha, que contém o rótulo final de classificação (ex: "Trocar").
+
+Papel no ID3: Modelar a estrutura de IF/THEN que o algoritmo constrói recursivamente.
+
+import java.util.Map;
+import java.util.HashMap;
+
+/**
+ * Representa um Nó na Árvore de Decisão ID3.
+ * Pode ser um Nó Interno (Decisão) ou um Nó Folha (Rótulo final).
+ */
+public class ID3Node {
+    public String attributeName; // Nome do atributo testado (ex: "SO") [cite: 24]
+    public String label;         // Rótulo de decisão final (ex: "Trocar") [cite: 25]
+    public Map<String, ID3Node> children; // Mapeia valor do atributo para nó filho (ex: "iOS" -> Nó Filho) [cite: 26]
+
+    /**
+     * Construtor para Nó Interno (Decisão).
+     */
+    public ID3Node(String attributeName) {
+        this.attributeName = attributeName;
+        this.children = new HashMap<>(); // Inicializa o mapa de ramificações
+        this.label = null;               // Não é um nó folha
+    }
+
+    /**
+     * Construtor para Nó Folha (Decisão final).
+     */
+    public ID3Node(String label, boolean isLeaf) {
+        this.label = label;
+        this.attributeName = null; // Não testa atributo
+        this.children = null;      // Não tem ramificações
+    }
+}
+
+#3. ID3Metrics.java
+#Objetivo: Fornecer as ferramentas matemáticas para o ID3 tomar decisões.
+
+Função: Contém os métodos estáticos para calcular:
+
+Entropia: Mede a impureza de um conjunto de dados (a mistura entre os rótulos "Trocar" e "Não Trocar").
+
+Ganho de Informação: Calcula a redução esperada da impureza se um determinado atributo for escolhido para a divisão.
+
+Papel no ID3: O Ganho de Informação é a métrica crucial usada em cada etapa para decidir qual é o melhor atributo para dividir o conjunto de dados.
+
+import java.util.*;
+import static java.lang.Math.*;
+
+/**
+ * Classe utilitária para calcular as métricas do algoritmo ID3:
+ * Entropia e Ganho de Informação.
+ */
+@SuppressWarnings("unused")
+public class ID3Metrics {
+
+    /** Auxiliar: Implementa log na base 2, tratando log(0) como 0 (para evitar NaN na entropia). */
+    public static double log2(double x) {
+        return (x <= 0) ? 0.0 : Math.log(x) / Math.log(2);
+    }
+
+    /** 2.1. Contagem de Rótulos: Conta a frequência de cada classe. */
+    public static Map<String, Long> countLabels(List<DataPoint> dataset) {
+        Map<String, Long> counts = new HashMap<>();
+        for (DataPoint dp : dataset) {
+            counts.put(dp.getTargetLabel(), counts.getOrDefault(dp.getTargetLabel(), 0L) + 1);
+        }
+        return counts;
+    }
+
+    /** 2.2. Cálculo da Entropia: Mede a impureza de um conjunto de dados S. */
+    public static double calculateEntropy(List<DataPoint> dataset) {
+        double entropy = 0.0;
+        double total = dataset.size();
+        if (total == 0) return 0.0;
+
+        Map<String, Long> counts = countLabels(dataset);
+
+        // Fórmula da Entropia: E(S) = - sum(p_i * log2(p_i))
+        for (Long count : counts.values()) {
+            double p = count / total; // Proporção da classe i
+            entropy -= p * log2(p);
+        }
+        return entropy;
+    }
+
+    /** 2.3. Cálculo do Ganho de Informação: Ganho(A) = E(S) - E_ponderada(A) */
+    public static double calculateGain(List<DataPoint> dataset, int attributeIndex) {
+        double initialEntropy = calculateEntropy(dataset);
+        double total = dataset.size();
+        double weightedEntropy = 0.0;
+
+        // 1. Encontrar valores únicos para ramificação
+        Set<String> uniqueValues = new HashSet<>();
+        for (DataPoint dp : dataset) {
+            uniqueValues.add(dp.getFeature(attributeIndex));
+        }
+
+        // 2. Calcular a Entropia Ponderada
+        for (String value : uniqueValues) {
+            // Chamada ao método de filtragem de dados
+            List<DataPoint> subset = filterDataset(dataset, attributeIndex, value);
+            
+            if (!subset.isEmpty()) {
+                double subsetWeight = subset.size() / total; // |Sv| / |S|
+                double subsetEntropy = calculateEntropy(subset); // Chamada recursiva da Entropia
+                weightedEntropy += subsetWeight * subsetEntropy; // Soma ponderada
+            }
+        }
+
+        return initialEntropy - weightedEntropy; // Ganho
+    }
+
+    /** Auxiliar: Filtra o dataset para criar um subconjunto de dados. 
+     * Mudamos o modificador de acesso para 'public' para ser acessível 
+     * diretamente em ID3Algorithm e SmartphoneClassifier, mantendo o design modular.
+     */
+    public static List<DataPoint> filterDataset(
+            List<DataPoint> dataset,
+            int attributeIndex,
+            String value) {
+
+        List<DataPoint> filteredDataset = new ArrayList<>();
+        for (DataPoint dp : dataset) {
+            if (dp.getFeature(attributeIndex).equals(value)) {
+                filteredDataset.add(dp);
+            }
+        }
+        return filteredDataset;
+    }
+}
+
+#4. ID3Algorithm.java
+#Objetivo: Implementar o processo recursivo de construção da árvore.
+
+Função: Contém o método principal buildTree, que:
+
+Identifica o melhor atributo usando o ID3Metrics.
+
+Cria um nó de decisão com esse atributo.
+
+Divide o conjunto de dados (usando o filterDataset de ID3Metrics) para cada valor do atributo.
+
+Chama-se recursivamente para construir as subárvores.
+
+Papel no ID3: É o "motor" do algoritmo, responsável por treinar o modelo a partir dos dados.
+
+import java.util.*;
+import static java.lang.Math.*;
+
+/**
+ * Classe utilitária para calcular as métricas do algoritmo ID3:
+ * Entropia e Ganho de Informação.
+ */
+@SuppressWarnings("unused")
+public class ID3Metrics {
+
+    /** Auxiliar: Implementa log na base 2, tratando log(0) como 0 (para evitar NaN na entropia). */
+    public static double log2(double x) {
+        return (x <= 0) ? 0.0 : Math.log(x) / Math.log(2);
+    }
+
+    /** 2.1. Contagem de Rótulos: Conta a frequência de cada classe. */
+    public static Map<String, Long> countLabels(List<DataPoint> dataset) {
+        Map<String, Long> counts = new HashMap<>();
+        for (DataPoint dp : dataset) {
+            counts.put(dp.getTargetLabel(), counts.getOrDefault(dp.getTargetLabel(), 0L) + 1);
+        }
+        return counts;
+    }
+
+    /** 2.2. Cálculo da Entropia: Mede a impureza de um conjunto de dados S. */
+    public static double calculateEntropy(List<DataPoint> dataset) {
+        double entropy = 0.0;
+        double total = dataset.size();
+        if (total == 0) return 0.0;
+
+        Map<String, Long> counts = countLabels(dataset);
+
+        // Fórmula da Entropia: E(S) = - sum(p_i * log2(p_i))
+        for (Long count : counts.values()) {
+            double p = count / total; // Proporção da classe i
+            entropy -= p * log2(p);
+        }
+        return entropy;
+    }
+
+    /** 2.3. Cálculo do Ganho de Informação: Ganho(A) = E(S) - E_ponderada(A) */
+    public static double calculateGain(List<DataPoint> dataset, int attributeIndex) {
+        double initialEntropy = calculateEntropy(dataset);
+        double total = dataset.size();
+        double weightedEntropy = 0.0;
+
+        // 1. Encontrar valores únicos para ramificação
+        Set<String> uniqueValues = new HashSet<>();
+        for (DataPoint dp : dataset) {
+            uniqueValues.add(dp.getFeature(attributeIndex));
+        }
+
+        // 2. Calcular a Entropia Ponderada
+        for (String value : uniqueValues) {
+            // Chamada ao método de filtragem de dados
+            List<DataPoint> subset = filterDataset(dataset, attributeIndex, value);
+            
+            if (!subset.isEmpty()) {
+                double subsetWeight = subset.size() / total; // |Sv| / |S|
+                double subsetEntropy = calculateEntropy(subset); // Chamada recursiva da Entropia
+                weightedEntropy += subsetWeight * subsetEntropy; // Soma ponderada
+            }
+        }
+
+        return initialEntropy - weightedEntropy; // Ganho
+    }
+
+    /** Auxiliar: Filtra o dataset para criar um subconjunto de dados. 
+     * Mudamos o modificador de acesso para 'public' para ser acessível 
+     * diretamente em ID3Algorithm e SmartphoneClassifier, mantendo o design modular.
+     */
+    public static List<DataPoint> filterDataset(
+            List<DataPoint> dataset,
+            int attributeIndex,
+            String value) {
+
+        List<DataPoint> filteredDataset = new ArrayList<>();
+        for (DataPoint dp : dataset) {
+            if (dp.getFeature(attributeIndex).equals(value)) {
+                filteredDataset.add(dp);
+            }
+        }
+        return filteredDataset;
+    }
+}
+
+#5. SmartphoneClassifier.java (Classe Principal)
+#Objetivo: Executar o projeto, treinar o modelo e testá-lo.
+
+Função:
+
+Define e carrega o conjunto de dados inicial.
+
+Chama os métodos de ID3Metrics para analisar o Ganho inicial e mostrar a lógica de escolha da raiz.
+
+Chama ID3Algorithm.buildTree para construir a árvore.
+
+Implementa o método classify para atravessar a árvore e fazer a previsão para novos smartphones.
+
+Papel no ID3: É o ponto de entrada que une todos os módulos e demonstra o resultado final do classificador.
 
 
+import java.util.*;
 
+/**
+ * Ponto de entrada do programa.
+ * Carrega o dataset, calcula o Ganho de Informação, constrói a árvore ID3 e
+ * executa testes de classificação.
+ */
+public class SmartphoneClassifier { // CORREÇÃO: Não precisa estender ID3Algorithm
 
+    private static final String[] ATTRIBUTE_NAMES = {"SO", "Tela", "Câmera", "Preço"};
+
+    /**
+     * Atravessa a árvore de decisão para classificar um novo ponto de dados.
+     */
+    public static String classify(ID3Node tree, DataPoint newDevice) {
+        // 1. Nó Folha: Retorna o rótulo
+        if (tree.label != null) {
+            return tree.label; 
+        }
+
+        // 2. Nó Interno: Encontra o índice do atributo de decisão
+        int attrIndex = -1;
+        for (int i = 0; i < ATTRIBUTE_NAMES.length; i++) {
+            if (ATTRIBUTE_NAMES[i].equals(tree.attributeName)) {
+                attrIndex = i;
+                break;
+            }
+        }
+
+        if (attrIndex == -1) return "Erro de Atributo";
+
+        // 3. Obtém o valor do atributo no novo dispositivo
+        String value = newDevice.getFeature(attrIndex);
+
+        // 4. Navega para o nó filho
+        if (tree.children.containsKey(value)) {
+            return classify(tree.children.get(value), newDevice);
+        } else {
+            // Caso em que o valor não foi visto no treinamento
+            return "Decisão Indefinida (Valor não encontrado: " + value + ")";
+        }
+    }
+
+    public static void main(String[] args) {
+        // Dataset de 8 pontos (4 Trocar, 4 Não Trocar)
+        List<DataPoint> dataset = Arrays.asList(
+            new DataPoint(Arrays.asList("iOS", "Média", "Alta", "Caro"), "Não Trocar"),       
+            new DataPoint(Arrays.asList("Android", "Grande", "Alta", "Razoável"), "Não Trocar"), 
+            new DataPoint(Arrays.asList("iOS", "Pequena", "Média", "Razoável"), "Trocar"),    
+            new DataPoint(Arrays.asList("Outro", "Média", "Baixa", "Barato"), "Trocar"),        
+            new DataPoint(Arrays.asList("Android", "Grande", "Média", "Barato"), "Trocar"),   
+            new DataPoint(Arrays.asList("iOS", "Média", "Baixa", "Caro"), "Não Trocar"),       
+            new DataPoint(Arrays.asList("Android", "Grande", "Alta", "Razoável"), "Não Trocar"), 
+            new DataPoint(Arrays.asList("Android", "Pequena", "Alta", "Caro"), "Trocar")      
+        );
+
+        // I. Foco na Discussão: Ganho de Informação Inicial (Raiz)
+        // CORREÇÃO: Chamada direta aos métodos estáticos em ID3Metrics
+        double initialEntropy = ID3Metrics.calculateEntropy(dataset); 
+        System.out.printf("Entropia Inicial (E(S)): %.4f (Esperado: 1.0000)%n", initialEntropy);
+        System.out.println("------------------------------------");
+
+        Set<Integer> allIndices = new HashSet<>(Arrays.asList(0, 1, 2, 3)); 
+        double maxGain = -1.0;
+        String bestAttr = "";
+
+        // Calcula o Ganho para cada atributo
+        for (int i = 0; i < ATTRIBUTE_NAMES.length; i++) {
+            // CORREÇÃO: Chamada direta aos métodos estáticos em ID3Metrics
+            double gain = ID3Metrics.calculateGain(dataset, i); 
+            System.out.printf("Ganho(%s): %.4f%n", ATTRIBUTE_NAMES[i], gain);
+            if (gain > maxGain) {
+                maxGain = gain;
+                bestAttr = ATTRIBUTE_NAMES[i];
+            }
+        }
+        System.out.println("------------------------------------");
+        System.out.println("Melhor Atributo para Raiz: **" + bestAttr + "** (Ganho: " + String.format("%.4f", maxGain) + ")");
+
+        // II. Construção e Classificação
+        System.out.println("\n--- Construindo Árvore de Decisão ID3 ---");
+        // CORREÇÃO: Chamada direta ao método estático em ID3Algorithm
+        ID3Node decisionTree = ID3Algorithm.buildTree(dataset, allIndices); 
+        System.out.println("Árvore construída. Raiz: " + decisionTree.attributeName);
+
+        System.out.println("\n--- Testes de Classificação ---");
+
+        // Teste 1: Dispositivo que deve levar a 'Não Trocar'
+        DataPoint test1 = new DataPoint(Arrays.asList("iOS", "Média", "Alta", "Caro"), null);
+        System.out.println("Teste 1 (iOS, Alta Câmera): Decisão -> " + classify(decisionTree, test1)); 
+
+        // Teste 2: Dispositivo que deve levar a 'Trocar'
+        DataPoint test2 = new DataPoint(Arrays.asList("Outro", "Pequena", "Baixa", "Barato"), null);
+        System.out.println("Teste 2 (Baixa Câmera, Barato): Decisão -> " + classify(decisionTree, test2));
+    }
+}
