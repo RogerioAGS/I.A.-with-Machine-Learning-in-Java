@@ -2647,3 +2647,72 @@ public class SmartphoneClassifier { // CORREÇÃO: Não precisa estender ID3Algo
         System.out.println("Teste 2 (Baixa Câmera, Barato): Decisão -> " + classify(decisionTree, test2));
     }
 }
+
+O objetivo principal do projeto e as funções de cada programa (classe Java) são os seguintes:
+
+Objetivo Principal do Projeto: Decisor de Escolha de Refeição
+O objetivo central do projeto é simular o processo de tomada de decisão humana complexa—especificamente, escolher entre "Pedir Delivery" ou "Cozinhar" uma refeição.
+
+
+
+Isso é realizado através da implementação do algoritmo ID3 (Iterative Dichotomiser 3), um algoritmo clássico de aprendizado de máquina supervisionado para a criação de árvores de decisão. O projeto demonstra como o Ganho de Informação é usado para priorizar fatores cruciais, como Fome ou Tempo, determinando qual atributo é o mais relevante para a decisão final.
+
+
+Seção 3 - Projeto 6: Decisor de Escolha de Refeição
+
+Projeto com executável: Projeto6DecisorDeEscolhaDeRefeicao
+Objetivo de Cada Programa (Classe Java)
+O projeto está estruturado em quatro classes principais, cada uma com uma função específica dentro do fluxo do algoritmo ID3:
+
+1. DataPoint.java
+
+Objetivo: Representar uma única instância de dados do mundo real, seja um ponto de treinamento (com resultado conhecido) ou um novo pedido de refeição (a ser classificado).
+
+
+
+
+Função: Armazenar os valores dos atributos (Fome, Tempo, Ingredientes, Orçamento) e o rótulo de decisão (Pedir Delivery ou Cozinhar).
+
+2. ID3Node.java
+Objetivo: Construir a estrutura básica da Árvore de Decisão.
+
+Função: Representar um nó na árvore. Um nó pode ser um nó interno (que armazena o attributeName para a divisão, como "Fome") ou um nó folha (que armazena a decisão final, o label, como "Cozinhar").
+
+
+3. ID3Metrics.java
+
+Objetivo: Calcular as métricas fundamentais que guiam a construção da árvore ID3.
+
+
+Função: Fornecer os métodos essenciais:
+
+
+calculateEntropy: Medir o grau de incerteza (mistura de rótulos) em um conjunto de dados.
+
+
+
+
+calculateGain: Determinar o Ganho de Informação, que mede a redução de incerteza obtida ao dividir o dataset por um atributo específico. O atributo com maior Ganho é escolhido para a divisão.
+
+
+
+
+4. MealDecisor.java
+
+Objetivo: Implementar a lógica central do algoritmo ID3 e executar o projeto.
+
+
+
+Funções Principais:
+
+
+buildTree: Função recursiva que utiliza o ID3Metrics para encontrar o melhor atributo (maior Ganho) em cada passo e constrói a árvore de decisão com base no dataset de treinamento.
+
+
+
+
+classify: Atravessar a árvore construída (decisionTree) para tomar uma decisão (classificar) uma nova instância de pedido de refeição, retornando a decisão final (Pedir Delivery ou Cozinhar).
+
+
+
+main: Inicializar o dataset, executar a análise de Ganho de Informação, construir a árvore e rodar os testes de classificação.
